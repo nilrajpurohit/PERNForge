@@ -69,6 +69,15 @@ jobs:
           # Try curling localhost from inside the server container
           docker compose -f compose.prod.yml exec -T server sh -c "curl -v --fail http://localhost:4000/api/health" || true
 
+      - name: Show server container logs
+        run: docker compose -f compose.prod.yml logs server
+
+      - name: Inspect server container
+        run: docker inspect $(docker compose -f compose.prod.yml ps -q server)
+
+      - name: Check server process
+        run: docker compose -f compose.prod.yml exec -T server ps aux
+
       - name: Test API (host)
         run: |
           # From the runner, use localhost since service DNS (server) only resolves inside the compose network
