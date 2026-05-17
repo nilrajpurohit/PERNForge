@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "test": "pnpm test:unit && pnpm test:integration",
-    "test:unit": "jest --runInBand",
+    "test:unit": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.cjs --runInBand",
     "test:integration": "mocha -r ts-node/register src/tests/mocha/**/*.spec.ts --exit",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
