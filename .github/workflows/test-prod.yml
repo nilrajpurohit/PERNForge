@@ -43,7 +43,7 @@ jobs:
         run: |
           # Build local images from the repository Dockerfiles so CI tests the current code
           docker compose -f compose.prod.yml build --pull
-          docker compose -f compose.prod.yml up -d
+          docker compose -f compose.prod.yml up -d --wait
 
       - name: Wait for services
         run: sleep 15
