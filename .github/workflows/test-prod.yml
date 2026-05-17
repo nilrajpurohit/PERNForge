@@ -50,7 +50,7 @@ jobs:
 
       - name: Test API
         run: |
-          curl --fail http://localhost:${{ env.SERVER_PORT || 4000 }}/health || exit 1
+          curl --fail http://localhost:${{ env.SERVER_PORT || 4000 }}/api/health || exit 1
 
       - name: Show logs if failure
         if: failure()
