@@ -76,7 +76,7 @@ jobs:
         run: docker inspect $(docker compose -f compose.prod.yml ps -q server)
 
       - name: Check server process
-        run: docker compose -f compose.prod.yml exec -T server ps aux
+        run: docker compose -f compose.prod.yml exec -T server sh -c "ls -la"
 
       - name: Test API (host)
         run: |
