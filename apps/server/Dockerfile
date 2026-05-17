@@ -17,6 +17,7 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=builder /app/apps/server/package.json ./apps/server/package.json
-# production deps only (important for Prisma runtime)
-RUN pnpm --filter @pern-auth/server install --prod --frozen-lockfile
+# copy installed runtime dependencies from the builder stage
+COPY --from=builder /app/node_modules ./node_modules
+# (no runtime install here; builder already installed deps for the workspace)
 CMD ["node", "dist/index.js"]

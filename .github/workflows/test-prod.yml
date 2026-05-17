@@ -72,7 +72,7 @@ jobs:
       - name: Test API (host)
         run: |
           # From the runner, use localhost since service DNS (server) only resolves inside the compose network
-          for i in {1..12}; do
+          for i in {1..3}; do
             if curl --fail http://localhost:${{ env.SERVER_PORT || 4000 }}/api/health; then
               exit 0
             fi
