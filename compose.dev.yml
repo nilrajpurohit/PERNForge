@@ -1,0 +1,105 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - ${DB_PORT}:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pern-network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+    - redis-data:/data
+    ports:
+      - ${REDIS_PORT}:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pern-network
+
+  server:
+    image: node:22-bullseye-slim
+    restart: unless-stopped
+    command: > 
+      sh -c "
+        corepack enable && 
+        corepack prepare pnpm@9.8.0 --activate && 
+        cd /workspace && 
+        pnpm install && 
+        pnpm --filter @pern-auth/server prisma:generate &&
+        pnpm --filter @pern-auth/server prisma:migrate:deploy &&
+        pnpm --filter @pern-auth/server dev
+      "
+    working_dir: /workspace
+    env_file: .env
+    volumes:
+      - ./:/workspace
+      - ./.env:/workspace/.env
+    environment:
+      DATABASE_URL: ${DB_URL}
+      REDIS_URL: ${REDIS_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: ${SERVER_PORT}
+    ports:
+      - ${SERVER_PORT}:${SERVER_PORT}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pern-network
+
+  client:
+    image: node:22-alpine
+    restart: unless-stopped
+    command: sh -c "corepack enable && corepack prepare pnpm@9.8.0 --activate && cd /workspace && pnpm install && pnpm --filter @pern-auth/client dev -- --host 0.0.0.0"
+    working_dir: /workspace
+    env_file: .env
+    volumes:
+      - ./:/workspace
+      - ./.env:/workspace/.env
+    ports:
+      - ${CLIENT_PORT}:${CLIENT_PORT}
+    depends_on:
+      - server
+    networks:
+      - pern-network
+      
+  nginx:
+    image: nginx:stable-alpine
+    restart: unless-stopped
+    ports:
+      - ${NGINX_PORT}:${NGINX_PORT}
+    volumes:
+      - ./nginx/nginx.dev.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - client
+      - server
+    networks:
+      - pern-network
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  pern-network:
+    driver: bridge

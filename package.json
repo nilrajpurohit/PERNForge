@@ -1,0 +1,18 @@
+{
+  "name": "pern-auth-app",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm --parallel --filter @pern-auth/client --filter @pern-auth/server dev",
+    "build": "pnpm --recursive build",
+    "test": "pnpm --recursive test",
+    "bootstrap": "pnpm install"
+  },
+  "devDependencies": {
+    "pnpm": "^9.8.0"
+  }
+}

@@ -1,0 +1,60 @@
+name: Test Production Compose (Docker Hub Images)
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+
+jobs:
+  test-prod-compose:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create .env for production test
+        run: |
+          cat <<EOF > .env
+          APP_NAME=PERNForge
+          NGINX_PORT=80
+          CLIENT_URL=http://client:3000
+          CLIENT_PORT=3000
+          SERVER_URL=http://server:4000
+          SERVER_PORT=4000
+          API_BASE_URL=/api
+          DB_URL=postgresql://test:test@postgres:5432/testdb
+          DB_NAME=testdb
+          DB_USER=test
+          DB_PASSWORD=test
+          DB_PORT=5432
+          REDIS_URL=redis://redis:6379
+          REDIS_HOST=redis
+          REDIS_PORT=6379
+          JWT_SECRET=testsecret
+          DOCKERHUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
+          EOF
+
+      - name: Set up Docker Compose
+        run: docker compose version
+
+      - name: Pull images & start production stack
+        run: docker compose -f compose.prod.yml up -d
+
+      - name: Wait for services
+        run: sleep 15
+
+      - name: Check running containers
+        run: docker ps
+
+      - name: Test API
+        run: |
+          curl --fail http://localhost:${{ env.SERVER_PORT || 4000 }}/health || exit 1
+
+      - name: Show logs if failure
+        if: failure()
+        run: docker compose -f compose.prod.yml logs
+
+      - name: Cleanup
+        run: docker compose -f compose.prod.yml down -v
