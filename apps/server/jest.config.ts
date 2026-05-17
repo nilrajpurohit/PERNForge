@@ -7,6 +7,9 @@ const config: Config.InitialOptions = {
   transform: {
     '^.+\\.tsx?$': 'ts-jest'
   },
+  moduleNameMapper: {
+    '^(.*)\\.js$': '$1'
+  },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'json'],
   testMatch: ['**/?(*.)+(spec|test).[tj]s?(x)']
 };
