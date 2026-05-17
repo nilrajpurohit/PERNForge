@@ -6,6 +6,7 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps ./apps
 COPY packages ./packages
 RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @pern-auth/server prisma:generate
 RUN pnpm --filter @pern-auth/server build
 
 # Production
