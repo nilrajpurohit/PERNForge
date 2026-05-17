@@ -30,9 +30,6 @@ services:
       - pern-network
 
   server:
-    build:
-      context: ./apps/server
-      dockerfile: Dockerfile
     image: ${DOCKERHUB_USERNAME}/pern-server:latest
     restart: unless-stopped
     environment:
@@ -51,9 +48,6 @@ services:
       - pern-network
 
   client:
-    build:
-      context: ./apps/client
-      dockerfile: Dockerfile
     image: ${DOCKERHUB_USERNAME}/pern-client:latest
     restart: unless-stopped
     ports:
