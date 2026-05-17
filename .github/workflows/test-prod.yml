@@ -66,9 +66,17 @@ jobs:
           # Try curling localhost from inside the server container
           docker compose -f compose.prod.yml exec -T server sh -c "curl -v --fail http://localhost:4000/api/health" || true
 
-      - name: Test API
+      - name: Test API (host)
         run: |
-          curl --fail http://server:${{ env.SERVER_PORT || 4000 }}/api/health || exit 1
+          # From the runner, use localhost since service DNS (server) only resolves inside the compose network
+          for i in {1..12}; do
+            if curl --fail http://localhost:${{ env.SERVER_PORT || 4000 }}/api/health; then
+              exit 0
+            fi
+            echo 'Waiting for server on localhost to become available...'
+            sleep 5
+          done
+          exit 1
 
       - name: Show logs if failure
         if: failure()
