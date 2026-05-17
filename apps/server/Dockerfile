@@ -17,7 +17,7 @@ COPY --from=builder /app/pnpm-lock.yaml ./
 COPY --from=builder /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/server ./apps/server
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/apps/server/dist ./dist
 WORKDIR /app/apps/server
 EXPOSE 4000
 CMD ["node", "../../dist/app.js"]
