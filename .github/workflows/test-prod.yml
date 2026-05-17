@@ -47,6 +47,24 @@ jobs:
 
       - name: Check running containers
         run: docker ps
+      
+      - name: Show compose service status and ports
+        run: |
+          docker compose -f compose.prod.yml ps
+          docker compose -f compose.prod.yml port server 4000 || true
+
+      - name: Dump server logs (helpful for debugging startup)
+        run: docker compose -f compose.prod.yml logs --tail=200 server || true
+
+      - name: In-network curl from client container
+        run: |
+          # Try reaching the server from the client service inside the compose network
+          docker compose -f compose.prod.yml exec -T client sh -c "curl -v --fail http://server:4000/api/health" || true
+
+      - name: In-container curl on server
+        run: |
+          # Try curling localhost from inside the server container
+          docker compose -f compose.prod.yml exec -T server sh -c "curl -v --fail http://localhost:4000/api/health" || true
 
       - name: Test API
         run: |
