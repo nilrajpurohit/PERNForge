@@ -14,5 +14,14 @@
   },
   "devDependencies": {
     "pnpm": "^9.8.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "prisma",
+      "@prisma/client",
+      "@prisma/engines",
+      "bcrypt",
+      "esbuild"
+    ]
   }
 }
