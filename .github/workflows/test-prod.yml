@@ -5,7 +5,7 @@ on:
     workflows: ["CI/CD Pipeline"]
     types:
       - completed
-
+  workflow_dispatch:
 jobs:
   test-prod-compose:
     runs-on: ubuntu-latest
