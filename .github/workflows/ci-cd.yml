@@ -35,7 +35,7 @@ jobs:
 
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --approve-builds
 
       - name: Generate Prisma Client (server only)
         run: pnpm --filter @pern-auth/server prisma:generate
