@@ -14,6 +14,8 @@ RUN corepack enable && corepack prepare pnpm@9.8.0 --activate
 # only runtime output
 COPY --from=builder /app/apps/server/dist ./dist
 COPY --from=builder /app/apps/server/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 # production deps only (important for Prisma runtime)
 RUN pnpm install --prod --frozen-lockfile
 CMD ["node", "dist/index.js"]
