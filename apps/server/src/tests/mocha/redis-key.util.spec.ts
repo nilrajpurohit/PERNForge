@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { buildRefreshTokenKey } from '../../utils/redis-key.util.js';
+import { buildRefreshTokenKey } from '../../utils/redis-key.util.ts';
 
 describe('redis-key util', () => {
   it('builds a refresh token key consistently', () => {
