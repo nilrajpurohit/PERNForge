@@ -36,6 +36,7 @@ COPY packages ./packages
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @pern-auth/server prisma:generate
 RUN pnpm --filter @pern-auth/server build
+RUN pnpm --filter @pern-auth/server deploy --prod /out/server
 # -------------------------
 # Production runtime
 # -------------------------
@@ -44,13 +45,25 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV CI=true
 ENV HOME=/home/pernforgeuser
-RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 RUN groupadd -r pernforgegroup && useradd -r -g pernforgegroup pernforgeuser
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
-COPY --from=builder /app/apps/server/dist ./dist
-COPY --from=builder /app/apps/server/prisma ./prisma
-RUN pnpm install --prod --frozen-lockfile
+COPY --from=builder /out/server ./
 RUN chown -R pernforgeuser:pernforgegroup /app
 USER pernforgeuser
 EXPOSE 4000
 CMD ["node", "dist/index.js"]
+
+# FROM node:22-bullseye-slim AS runner
+# WORKDIR /app
+# ENV NODE_ENV=production
+# ENV CI=true
+# ENV HOME=/home/pernforgeuser
+# RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
+# RUN groupadd -r pernforgegroup && useradd -r -g pernforgegroup pernforgeuser
+# COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+# COPY --from=builder /app/apps/server/dist ./dist
+# COPY --from=builder /app/apps/server/prisma ./prisma
+# RUN pnpm install --prod --frozen-lockfile
+# RUN chown -R pernforgeuser:pernforgegroup /app
+# USER pernforgeuser
+# EXPOSE 4000
+# CMD ["node", "dist/index.js"]
