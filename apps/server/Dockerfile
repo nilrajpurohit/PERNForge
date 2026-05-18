@@ -49,7 +49,6 @@ RUN groupadd -r pernforgegroup && useradd -r -g pernforgegroup pernforgeuser
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY --from=builder /app/apps/server/dist ./dist
 COPY --from=builder /app/apps/server/prisma ./prisma
-COPY --from=builder /app/apps/server/package.json ./package.json
 RUN pnpm install --prod --frozen-lockfile
 RUN chown -R pernforgeuser:pernforgegroup /app
 USER pernforgeuser
