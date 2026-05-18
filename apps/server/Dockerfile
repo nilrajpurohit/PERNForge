@@ -46,6 +46,7 @@ ENV CI=true
 ENV HOME=/home/pernforgeuser
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 RUN groupadd -r pernforgegroup && useradd -r -g pernforgegroup pernforgeuser
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY --from=builder /app/apps/server/dist ./dist
 COPY --from=builder /app/apps/server/prisma ./prisma
 COPY --from=builder /app/apps/server/package.json ./package.json
