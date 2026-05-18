@@ -37,6 +37,7 @@ RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @pern-auth/server prisma:generate
 RUN pnpm --filter @pern-auth/server build
 RUN pnpm --filter @pern-auth/server deploy --prod /out/server
+RUN cd /out/server && pnpm prisma generate
 # -------------------------
 # Production runtime
 # -------------------------
