@@ -44,10 +44,12 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV CI=true
 ENV HOME=/home/pernforgeuser
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 RUN groupadd -r pernforgegroup && useradd -r -g pernforgegroup pernforgeuser
 COPY --from=builder /app/apps/server/dist ./dist
 COPY --from=builder /app/apps/server/prisma ./prisma
 COPY --from=builder /app/apps/server/package.json ./package.json
+RUN pnpm install --prod --frozen-lockfile
 RUN chown -R pernforgeuser:pernforgegroup /app
 USER pernforgeuser
 EXPOSE 4000
