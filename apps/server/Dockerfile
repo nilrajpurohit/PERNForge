@@ -43,9 +43,13 @@ FROM node:22-bullseye-slim AS runner
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY --from=builder /app/apps/server/package.json ./apps/server/
 RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/server/prisma ./apps/server/prisma
+RUN addgroup -S pernforgegroup && adduser -S pernforgeuser -G pernforgegroup
+RUN chown -R pernforgeuser:pernforgegroup /app
+USER pernforgeuser
 WORKDIR /app/apps/server
 EXPOSE 4000
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/index.js"]
+CMD ["sh", "-c", "pnpm prisma:migrate:deploy && node dist/index.js"]

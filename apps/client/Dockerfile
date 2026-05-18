@@ -34,7 +34,8 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@9.8.0 --activate \
     && pnpm add serve@14.2.0
 COPY --from=builder /app/apps/client/dist ./dist
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
+RUN addgroup -S pernforgegroup && adduser -S pernforgeuser -G pernforgegroup
+RUN chown -R pernforgeuser:pernforgegroup /app
+USER pernforgeuser
 EXPOSE 4173
 CMD ["pnpm", "serve", "-s", "dist", "-l", "4173"]
