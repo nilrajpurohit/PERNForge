@@ -9,6 +9,5 @@ COPY packages ./packages
 RUN pnpm install
 RUN pnpm --filter @pern-auth/client build
 # Install static file server
-RUN pnpm add serve
 EXPOSE 4173
-CMD ["pnpm", "exec", "serve", "-s", "apps/client/dist", "-l", "4173"]
+CMD ["pnpm", "dlx", "serve", "-s", "apps/client/dist", "-l", "4173"]
