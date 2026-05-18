@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+
+metadata:
+  name: pernforge-server
+
+spec:
+  selector:
+    app: pernforge-server
+
+  ports:
+    - port: 4000
+      targetPort: 4000

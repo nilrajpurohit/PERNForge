@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: Job
+
+metadata:
+  name: pernforge-prisma-migrate
+  namespace: pernforge-prod
+
+spec:
+  backoffLimit: 3
+
+  template:
+    metadata:
+      labels:
+        app: pernforge-prisma-migrate
+
+    spec:
+      restartPolicy: Never
+
+      containers:
+        - name: prisma-migrate
+
+          image: nilrajpurohit3/pern-server:latest
+          imagePullPolicy: Always
+
+          command:
+            - npm
+            - run
+            - prisma:migrate:deploy
+
+          envFrom:
+            - configMapRef:
+                name: pernforge-config
+
+            - secretRef:
+                name: pernforge-secret
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+
+            limits:
+              cpu: 250m
+              memory: 256Mi

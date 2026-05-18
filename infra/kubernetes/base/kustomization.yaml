@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace/namespace.yaml
+
+  - client/deployment.yaml
+  - client/service.yaml
+
+  - server/deployment.yaml
+  - server/service.yaml
+
+  - ingress/ingress.yaml
+
+  - network-policy/default-deny.yaml
+  - network-policy/allow-ingress-nginx.yaml
+
+  - rbac/service-account.yaml
+  - rbac/role.yaml
+  - rbac/role-binding.yaml
+
+  - cronjob/cronjob.yaml
+
+  - job/prisma-migrate-job.yaml
+
+  - secret/secret.yaml
+
+  - configmap/configmap.yaml
+
+  - hpa/client-hpa.yaml
+  - hpa/server-hpa.yaml

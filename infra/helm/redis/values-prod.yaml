@@ -1,0 +1,34 @@
+architecture: standalone
+
+auth:
+  enabled: false
+
+master:
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: standard
+
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+
+    limits:
+      memory: "256Mi"
+      cpu: "250m"
+
+  livenessProbe:
+    enabled: true
+
+  readinessProbe:
+    enabled: true
+
+  startupProbe:
+    enabled: true
+
+replica:
+  replicaCount: 0
+
+metrics:
+  enabled: false

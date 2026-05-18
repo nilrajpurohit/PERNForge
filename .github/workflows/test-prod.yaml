@@ -42,8 +42,8 @@ jobs:
       - name: Build images & start production stack
         run: |
           # Build local images from the repository Dockerfiles so CI tests the current code
-          docker compose -f compose.prod.yml build --pull
-          docker compose -f compose.prod.yml up -d --wait
+          docker compose -f compose.prod.yaml build --pull
+          docker compose -f compose.prod.yaml up -d --wait
 
       - name: Wait for services
         run: sleep 15
@@ -53,30 +53,30 @@ jobs:
       
       - name: Show compose service status and ports
         run: |
-          docker compose -f compose.prod.yml ps
-          docker compose -f compose.prod.yml port server 4000 || true
+          docker compose -f compose.prod.yaml ps
+          docker compose -f compose.prod.yaml port server 4000 || true
 
       - name: Dump server logs (helpful for debugging startup)
-        run: docker compose -f compose.prod.yml logs --tail=200 server || true
+        run: docker compose -f compose.prod.yaml logs --tail=200 server || true
 
       - name: In-network curl from client container
         run: |
           # Try reaching the server from the client service inside the compose network
-          docker compose -f compose.prod.yml exec -T client sh -c "curl -v --fail http://server:4000/api/health" || true
+          docker compose -f compose.prod.yaml exec -T client sh -c "curl -v --fail http://server:4000/api/health" || true
 
       - name: In-container curl on server
         run: |
           # Try curling localhost from inside the server container
-          docker compose -f compose.prod.yml exec -T server sh -c "curl -v --fail http://localhost:4000/api/health" || true
+          docker compose -f compose.prod.yaml exec -T server sh -c "curl -v --fail http://localhost:4000/api/health" || true
 
       - name: Show server container logs
-        run: docker compose -f compose.prod.yml logs server
+        run: docker compose -f compose.prod.yaml logs server
 
       - name: Inspect server container
-        run: docker inspect $(docker compose -f compose.prod.yml ps -q server)
+        run: docker inspect $(docker compose -f compose.prod.yaml ps -q server)
 
       - name: Check server process
-        run: docker compose -f compose.prod.yml exec -T server sh -c "ls -la"
+        run: docker compose -f compose.prod.yaml exec -T server sh -c "ls -la"
 
       - name: Test API (host)
         run: |
@@ -92,7 +92,7 @@ jobs:
 
       - name: Show logs if failure
         if: failure()
-        run: docker compose -f compose.prod.yml logs
+        run: docker compose -f compose.prod.yaml logs
 
       - name: Cleanup
-        run: docker compose -f compose.prod.yml down -v
+        run: docker compose -f compose.prod.yaml down -v

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: pernforge-config
+
+data:
+  NODE_ENV: production
+
+  APP_NAME: PERNForge
+
+  CLIENT_PORT: "80"
+
+  SERVER_PORT: "4000"
+
+  API_BASE_URL: /api
+
+  CLIENT_URL: http://pernforge-client
+
+  SERVER_URL: http://pernforge-server:4000

@@ -1,0 +1,13 @@
+kind: Service
+apiVersion: v1
+
+metadata:
+  name: pernforge-client
+
+spec:
+  selector:
+    app: pernforge-client
+
+  ports:
+    - port: 80
+      targetPort: 4173

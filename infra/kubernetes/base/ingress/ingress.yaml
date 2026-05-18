@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+
+metadata:
+  name: pernforge-ingress
+
+spec:
+  ingressClassName: nginx
+
+  rules:
+
+      - http:
+          paths:
+            - path: /
+              pathType: Prefix
+
+              backend:
+                service:
+                  name: pernforge-client
+                  port:
+                    number: 80
+
+            - path: /api
+              pathType: Prefix
+
+              backend:
+                service:
+                  name: pernforge-server
+                  port:
+                    number: 4000
