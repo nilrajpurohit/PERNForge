@@ -25,7 +25,7 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps ./apps
 COPY packages ./packages
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @pern-auth/client build
+RUN pnpm build
 
 # -------------------------
 # 2. Production runtime
