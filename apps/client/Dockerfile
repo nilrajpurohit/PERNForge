@@ -19,6 +19,7 @@
 # -------------------------
 FROM node:22-alpine AS builder
 WORKDIR /app
+ENV NODE_ENV=production
 RUN corepack enable && corepack prepare pnpm@9.8.0 --activate
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps ./apps
@@ -31,11 +32,11 @@ RUN pnpm --filter @pern-auth/client build
 # -------------------------
 FROM node:22-alpine AS runner
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@9.8.0 --activate \
-    && pnpm add serve@14.2.0
+ENV NODE_ENV=production
+RUN npm install -g serve@14.2.0
 COPY --from=builder /app/apps/client/dist ./dist
 RUN addgroup -S pernforgegroup && adduser -S pernforgeuser -G pernforgegroup
-RUN chown -R pernforgeuser:pernforgegroup /app
+RUN chown -R pernforgeuser:pernforgegroup /app/dist
 USER pernforgeuser
 EXPOSE 4173
-CMD ["pnpm", "serve", "-s", "dist", "-l", "4173"]
+CMD ["serve", "-s", "dist", "-l", "4173"]

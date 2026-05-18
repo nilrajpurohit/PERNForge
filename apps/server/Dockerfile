@@ -41,15 +41,22 @@ RUN pnpm --filter @pern-auth/server build
 # -------------------------
 FROM node:22-bullseye-slim AS runner
 WORKDIR /app
+ENV CI=true
+ENV PNPM_CONFIG_IGNORE_SCRIPTS=false
+ENV PNPM_CONFIG_AUTO_INSTALL_PEERS=true
+ENV NODE_ENV=production
+ENV HOME=/home/pernforgeuser
+RUN groupadd -r pernforgegroup && useradd -r -g pernforgegroup pernforgeuser
+RUN mkdir -p /home/pernforgeuser/.cache /home/pernforgeuser/.pnpm \
+    && chown -R pernforgeuser:pernforgegroup /home/pernforgeuser
 RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY --from=builder /app/apps/server/package.json ./apps/server/
 RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/server/prisma ./apps/server/prisma
-RUN groupadd -r pernforgegroup && useradd -r -g pernforgegroup pernforgeuser
 RUN chown -R pernforgeuser:pernforgegroup /app
 USER pernforgeuser
 WORKDIR /app/apps/server
 EXPOSE 4000
-CMD ["sh", "-c", "pnpm prisma:migrate:deploy && node dist/index.js"]
+CMD ["sh", "-c", "set -e && pnpm prisma:migrate:deploy && node dist/index.js"]
