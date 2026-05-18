@@ -53,9 +53,9 @@ RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY --from=builder /app/apps/server/package.json ./apps/server/
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @pern-auth/server prisma:generate
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/server/prisma ./apps/server/prisma
+RUN pnpm --filter @pern-auth/server prisma:generate
 RUN chown -R pernforgeuser:pernforgegroup /app
 USER pernforgeuser
 WORKDIR /app/apps/server
