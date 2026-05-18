@@ -7,7 +7,6 @@ COPY apps ./apps
 COPY packages ./packages
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @pern-auth/server prisma:generate
-RUN pnpm --filter @pern-auth/server prisma:migrate:deploy
 RUN pnpm --filter @pern-auth/server build
 
 # Production
@@ -21,4 +20,4 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/server ./apps/server
 WORKDIR /app/apps/server
 EXPOSE 4000
-CMD ["node", "dist/index.js"]
+CMD ["sh", "-c", "pnpm prisma:migrate:deploy && node dist/index.js"]
