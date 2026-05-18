@@ -35,7 +35,7 @@ ENV NODE_ENV=production
 RUN npm install -g serve@14.2.0
 COPY --from=builder /app/apps/client/dist ./dist
 RUN addgroup -S pernforgegroup && adduser -S pernforgeuser -G pernforgegroup
-RUN chown -R pernforgeuser:pernforgegroup /app/dist
+RUN chown -R pernforgeuser:pernforgegroup /app
 USER pernforgeuser
 EXPOSE 4173
 CMD ["serve", "-s", "dist", "-l", "4173"]
