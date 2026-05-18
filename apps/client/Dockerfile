@@ -8,5 +8,7 @@ COPY apps ./apps
 COPY packages ./packages
 RUN pnpm install
 RUN pnpm --filter @pern-auth/client build
-FROM nginx:stable-alpine
-COPY --from=builder /app/apps/client/dist /usr/share/nginx/html
+# Install static file server
+RUN pnpm add -g serve
+EXPOSE 4173
+CMD ["serve", "-s", "dist", "-l", "4173"]

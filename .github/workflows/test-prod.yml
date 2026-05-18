@@ -19,8 +19,8 @@ jobs:
           cat <<EOF > .env
           APP_NAME=PERNForge
           NGINX_PORT=80
-          CLIENT_URL=http://client:3000
-          CLIENT_PORT=3000
+          CLIENT_URL=http://client:4173
+          CLIENT_PORT=4173
           SERVER_URL=http://server:4000
           SERVER_PORT=4000
           API_BASE_URL=/api
