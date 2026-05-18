@@ -19,12 +19,11 @@
 # -------------------------
 FROM node:22-alpine AS builder
 WORKDIR /app
-ENV NODE_ENV=production
 RUN corepack enable && corepack prepare pnpm@9.8.0 --activate
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps ./apps
 COPY packages ./packages
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @pern-auth/client build
 
 # -------------------------
