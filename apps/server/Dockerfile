@@ -47,7 +47,7 @@ COPY --from=builder /app/apps/server/package.json ./apps/server/
 RUN pnpm install --prod --frozen-lockfile
 COPY --from=builder /app/apps/server/dist ./apps/server/dist
 COPY --from=builder /app/apps/server/prisma ./apps/server/prisma
-RUN addgroup -S pernforgegroup && adduser -S pernforgeuser -G pernforgegroup
+RUN groupadd -r pernforgegroup && useradd -r -g pernforgegroup pernforgeuser
 RUN chown -R pernforgeuser:pernforgegroup /app
 USER pernforgeuser
 WORKDIR /app/apps/server
