@@ -2,7 +2,7 @@ name: Test Production Compose (Docker Hub Images)
 
 on:
   workflow_run:
-    workflows: ["CI/CD Pipeline"]
+    workflows: ["Kubernetes Production Validation"]
     types:
       - completed
   workflow_dispatch:
