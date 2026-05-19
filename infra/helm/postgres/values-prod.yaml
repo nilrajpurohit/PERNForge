@@ -1,7 +1,7 @@
 auth:
-  username: admin
-  password: console
-  database: pernforge
+  username: "admin"
+  password: "console"
+  database: "pernforge"
 
 primary:
   persistence:

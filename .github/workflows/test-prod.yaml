@@ -6,15 +6,20 @@ on:
     types:
       - completed
   workflow_dispatch:
+
 jobs:
   test-prod-compose:
     runs-on: ubuntu-latest
+
+    env:
+      COMPOSE_FILE: compose.prod.yaml
+      SERVER_PORT: 4000
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create .env for production test
+      - name: Create production test .env
         run: |
           cat <<EOF > .env
           APP_NAME=PERNForge
@@ -32,67 +37,50 @@ jobs:
           REDIS_URL=redis://redis:6379
           REDIS_HOST=redis
           REDIS_PORT=6379
+          REDIS_PASSWORD=pernforge
           JWT_SECRET=testsecret
           DOCKERHUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }}
           EOF
 
-      - name: Set up Docker Compose
-        run: docker compose version
+      - name: Validate Docker Compose
+        run: docker compose -f $COMPOSE_FILE version
 
-      - name: Build images & start production stack
+      - name: Build & start stack
         run: |
-          # Build local images from the repository Dockerfiles so CI tests the current code
-          docker compose -f compose.prod.yaml build --pull
-          docker compose -f compose.prod.yaml up -d --wait
+          docker compose -f $COMPOSE_FILE up -d --build --wait
 
-      - name: Wait for services
-        run: sleep 15
+      - name: Show service status
+        run: docker compose -f $COMPOSE_FILE ps
 
-      - name: Check running containers
-        run: docker ps
-      
-      - name: Show compose service status and ports
+      # ---------- HEALTH CHECK (REPLACES SLEEP + MULTIPLE CURL STEPS) ----------
+      - name: Wait for server health
         run: |
-          docker compose -f compose.prod.yaml ps
-          docker compose -f compose.prod.yaml port server 4000 || true
-
-      - name: Dump server logs (helpful for debugging startup)
-        run: docker compose -f compose.prod.yaml logs --tail=200 server || true
-
-      - name: In-network curl from client container
-        run: |
-          # Try reaching the server from the client service inside the compose network
-          docker compose -f compose.prod.yaml exec -T client sh -c "curl -v --fail http://server:4000/api/health" || true
-
-      - name: In-container curl on server
-        run: |
-          # Try curling localhost from inside the server container
-          docker compose -f compose.prod.yaml exec -T server sh -c "curl -v --fail http://localhost:4000/api/health" || true
-
-      - name: Show server container logs
-        run: docker compose -f compose.prod.yaml logs server
-
-      - name: Inspect server container
-        run: docker inspect $(docker compose -f compose.prod.yaml ps -q server)
-
-      - name: Check server process
-        run: docker compose -f compose.prod.yaml exec -T server sh -c "ls -la"
-
-      - name: Test API (host)
-        run: |
-          # From the runner, use localhost since service DNS (server) only resolves inside the compose network
-          for i in {1..3}; do
-            if curl --fail http://localhost:${{ env.SERVER_PORT || 4000 }}/api/health; then
+          for i in {1..10}; do
+            if docker compose -f $COMPOSE_FILE exec -T server \
+              curl -fs http://localhost:4000/api/health; then
+              echo "Server is healthy"
               exit 0
             fi
-            echo 'Waiting for server on localhost to become available...'
-            sleep 5
+
+            echo "Waiting for server..."
+            sleep 3
           done
+
+          echo "Server failed health check"
+          docker compose -f $COMPOSE_FILE logs server
           exit 1
 
-      - name: Show logs if failure
+      # ---------- DEBUGGING ONLY ON FAILURE ----------
+      - name: Dump logs on failure
         if: failure()
-        run: docker compose -f compose.prod.yaml logs
+        run: docker compose -f $COMPOSE_FILE logs --tail=200
 
-      - name: Cleanup
-        run: docker compose -f compose.prod.yaml down -v
+      - name: Inspect server container (debug)
+        if: failure()
+        run: |
+          docker inspect $(docker compose -f $COMPOSE_FILE ps -q server) || true
+
+      # ---------- CLEANUP ----------
+      - name: Cleanup stack
+        if: always()
+        run: docker compose -f $COMPOSE_FILE down -v

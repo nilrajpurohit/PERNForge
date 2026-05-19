@@ -14,25 +14,39 @@ on:
 jobs:
   test-and-build:
     runs-on: ubuntu-latest
+
     env:
       DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+
+    strategy:
+      matrix:
+        include:
+          - app: server
+            image: pern-server
+            dockerfile: apps/server/Dockerfile
+          - app: client
+            image: pern-client
+            dockerfile: apps/client/Dockerfile
+
     concurrency:
       group: ci-${{ github.ref }}
       cancel-in-progress: true
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-      
-      - name: Enable Corepack (pnpm manager)
+          cache: 'pnpm'
+
+      - name: Enable Corepack (pnpm)
         run: corepack enable
 
-      - name: Prepare pnpm
+      - name: Activate pnpm
         run: corepack prepare pnpm@9.8.0 --activate
-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -55,24 +69,14 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-      - name: Build & Push server image
+      - name: Build & Push ${{ matrix.app }} image
         run: |
-          docker buildx build --progress=plain \
+          docker buildx build \
+            --progress=plain \
             --cache-from type=gha \
             --cache-to type=gha,mode=max \
-            -f apps/server/Dockerfile \
-            -t $DOCKER_USER/pern-server:${{ github.sha }} \
-            -t $DOCKER_USER/pern-server:latest \
-            --push \
-            .
-
-      - name: Build & Push client image
-        run: |
-          docker buildx build --progress=plain \
-            --cache-from type=gha \
-            --cache-to type=gha,mode=max \
-            -f apps/client/Dockerfile \
-            -t $DOCKER_USER/pern-client:${{ github.sha }} \
-            -t $DOCKER_USER/pern-client:latest \
+            -f ${{ matrix.dockerfile }} \
+            -t ${{ secrets.DOCKER_HUB_USERNAME }}/${{ matrix.image }}:${{ github.sha }} \
+            -t ${{ secrets.DOCKER_HUB_USERNAME }}/${{ matrix.image }}:latest \
             --push \
             .

@@ -21,106 +21,136 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-      - name: Setup kubectl
+
+      # -----------------------------
+      # Kubernetes + Cluster Setup
+      # -----------------------------
+      - name: Setup kubectl & Helm
         uses: azure/setup-kubectl@v4
-        with:
-          version: latest
+
       - name: Setup Helm
         uses: azure/setup-helm@v4
+
       - name: Create Kind Cluster
         uses: helm/kind-action@v1
+
       - name: Cluster Info
         run: |
           kubectl cluster-info
           kubectl get nodes
-      - name: Install Ingress Controller
+
+      # -----------------------------
+      # Ingress Controller (optimized)
+      # -----------------------------
+      - name: Install Ingress NGINX
         run: |
           helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo update
 
-          helm install ingress-nginx ingress-nginx/ingress-nginx \
+          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
             --namespace ingress-nginx \
             --create-namespace
-      - name: Wait for ingress controller
+
+      - name: Wait for Ingress Controller
         run: |
           kubectl rollout status deployment/ingress-nginx-controller \
             -n ingress-nginx \
             --timeout=180s
+
+      # -----------------------------
+      # Databases (combined Helm setup)
+      # -----------------------------
       - name: Install PostgreSQL
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
 
-          helm install postgres bitnami/postgresql \
+          helm upgrade --install postgres bitnami/postgresql \
             --namespace $NAMESPACE \
             --create-namespace \
             --set auth.username=pernforge \
             --set auth.password=pernforgepassword \
             --set auth.database=pernforge
+
       - name: Install Redis
         run: |
-          helm install redis bitnami/redis \
+          helm upgrade --install redis bitnami/redis \
             --namespace $NAMESPACE \
-            --set auth.enabled=false
+            --set auth.enabled=true \
+            --set auth.password=pernforge
+
+      # -----------------------------
+      # Secrets (idempotent)
+      # -----------------------------
       - name: Create Kubernetes Secrets
         run: |
           kubectl create secret generic pernforge-secret \
             --namespace $NAMESPACE \
             --from-literal=DATABASE_URL="postgresql://pernforge:pernforgepassword@postgres-postgresql:5432/pernforge" \
-            --from-literal=REDIS_URL="redis://redis-master:6379" \
+            --from-literal=REDIS_URL="redis://:pernforge@redis-master:6379" \
             --from-literal=JWT_SECRET="supersecret" \
             --dry-run=client -o yaml | kubectl apply -f -
-      - name: Set Docker Image Tags
+
+      # -----------------------------
+      # Deploy Application
+      # -----------------------------
+      - name: Update Image Tags (Kustomize)
         run: |
           cd infra/kubernetes/overlays/prod
 
-          kustomize edit set image \
-            pernforg-server=$DOCKER_USER/pern-server:${{ github.sha }}
+          kustomize edit set image pernforge-server=$DOCKER_USER/pern-server:${{ github.sha }}
+          kustomize edit set image pernforge-client=$DOCKER_USER/pern-client:${{ github.sha }}
 
-          kustomize edit set image \
-            pernforg-client=$DOCKER_USER/pern-client:${{ github.sha }}
-      - name: Apply Kustomize
+      - name: Apply Kubernetes manifests
         run: |
           kubectl apply -k infra/kubernetes/overlays/prod
-      - name: Wait for Client Rollout
-        run: |
-          kubectl rollout status deployment/pernforge-client \
-            -n $NAMESPACE \
-            --timeout=180s
 
-      - name: Wait for Server Rollout
+      # -----------------------------
+      # Rollout checks (clean + parallel)
+      # -----------------------------
+      - name: Wait for Deployments
         run: |
-          kubectl rollout status deployment/pernforge-server \
-            -n $NAMESPACE \
-            --timeout=180s
-      - name: Get Kubernetes Resources
+          kubectl rollout status deployment/pernforge-client -n $NAMESPACE --timeout=180s &
+          kubectl rollout status deployment/pernforge-server -n $NAMESPACE --timeout=180s &
+          wait
+
+      # -----------------------------
+      # Health validation (no port-forward hacks)
+      # -----------------------------
+      - name: Port-forward server
         run: |
-          kubectl get all -A
-          kubectl get ingress -A
-          kubectl get pvc -A
-      - name: Port Forward API
+          kubectl port-forward svc/pernforge-server 4000:4000 -n $NAMESPACE > /dev/null 2>&1 &
+          echo "PORT_FORWARD_PID=$!" >> $GITHUB_ENV
+
+      - name: Wait for API health
         run: |
-          kubectl port-forward svc/pernforge-server \
-            4000:4000 \
-            -n $NAMESPACE &
-          
-          sleep 10
-      - name: Test API
-        run: |
-          curl --fail http://localhost:4000/api/health
-      - name: Debug Pods
+          for i in {1..10}; do
+            if curl -fs http://localhost:4000/api/health; then
+              echo "API is healthy"
+              exit 0
+            fi
+            echo "Waiting for API..."
+            sleep 3
+          done
+
+          echo "API failed health check"
+          kubectl logs deployment/pernforge-server -n $NAMESPACE
+          exit 1
+
+      # -----------------------------
+      # Debug only on failure
+      # -----------------------------
+      - name: Debug Kubernetes state
         if: failure()
         run: |
           kubectl get pods -A
-
           kubectl describe pods -n $NAMESPACE
+          kubectl logs deployment/pernforge-server -n $NAMESPACE
+          kubectl logs deployment/pernforge-client -n $NAMESPACE
 
-          kubectl logs deployment/pernforge-server \
-            -n $NAMESPACE
-
-          kubectl logs deployment/pernforge-client \
-            -n $NAMESPACE
-      - name: Cleanup
+      # -----------------------------
+      # Cleanup
+      # -----------------------------
+      - name: Cleanup Kind Cluster
         if: always()
-        run: |
-          kind delete cluster
+        run: kind delete cluster
