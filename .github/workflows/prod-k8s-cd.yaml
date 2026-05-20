@@ -72,9 +72,13 @@ jobs:
       # -----------------------------
       - name: Install Kustomize
         run: |
-          curl -s https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh | bash
+          curl -s \
+            https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh \
+            | bash
 
-          sudo mv kustomize /usr/local/bin/
+          chmod +x kustomize
+
+          mv kustomize /tmp/kustomize
 
       # -----------------------------
       # Update Image Tags
@@ -83,10 +87,10 @@ jobs:
         run: |
           cd infra/kubernetes/overlays/prod
 
-          kustomize edit set image \
+          /tmp/kustomize edit set image \
             pernforge-server=$DOCKER_USER/pern-server:${{ github.sha }}
 
-          kustomize edit set image \
+          /tmp/kustomize edit set image \
             pernforge-client=$DOCKER_USER/pern-client:${{ github.sha }}
 
       # -----------------------------
