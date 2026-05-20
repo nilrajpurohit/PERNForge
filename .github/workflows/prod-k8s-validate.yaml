@@ -65,7 +65,7 @@ jobs:
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
 
-          helm upgrade --install postgres bitnami/postgresql \
+          helm upgrade --install postgres-postgresql bitnami/postgresql \
             --namespace $NAMESPACE \
             --create-namespace \
             --set auth.username=pernforge \

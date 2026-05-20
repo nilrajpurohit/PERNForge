@@ -1,0 +1,133 @@
+name: Deploy to Minikube
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+on:
+  workflow_run:
+    workflows: ["Kubernetes Production Validation"]
+    types:
+      - completed
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+
+    runs-on: self-hosted
+
+    env:
+      NAMESPACE: pernforge-prod
+      DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+
+    steps:
+      # -----------------------------
+      # Checkout Repository
+      # -----------------------------
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # -----------------------------
+      # Verify Cluster
+      # -----------------------------
+      - name: Verify Kubernetes Cluster
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      # -----------------------------
+      # Add Helm Repositories
+      # -----------------------------
+      - name: Add Helm Repositories
+        run: |
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+
+          helm repo update
+
+      # -----------------------------
+      # Install / Upgrade PostgreSQL
+      # -----------------------------
+      - name: Install PostgreSQL
+        run: |
+          helm upgrade --install postgres-postgresql bitnami/postgresql \
+            --namespace $NAMESPACE \
+            --create-namespace \
+            -f infra/helm/postgres/values-prod.yaml
+
+      # -----------------------------
+      # Install / Upgrade Redis
+      # -----------------------------
+      - name: Install Redis
+        run: |
+          helm upgrade --install redis bitnami/redis \
+            --namespace $NAMESPACE \
+            -f infra/helm/redis/values-prod.yaml
+
+      # -----------------------------
+      # Install Kustomize
+      # -----------------------------
+      - name: Install Kustomize
+        run: |
+          curl -s https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh | bash
+
+          sudo mv kustomize /usr/local/bin/
+
+      # -----------------------------
+      # Update Image Tags
+      # -----------------------------
+      - name: Update Image Tags
+        run: |
+          cd infra/kubernetes/overlays/prod
+
+          kustomize edit set image \
+            pernforge-server=$DOCKER_USER/pern-server:${{ github.sha }}
+
+          kustomize edit set image \
+            pernforge-client=$DOCKER_USER/pern-client:${{ github.sha }}
+
+      # -----------------------------
+      # Apply Kustomize Overlay
+      # -----------------------------
+      - name: Deploy Application
+        run: |
+          kubectl apply -k infra/kubernetes/overlays/prod
+
+      # -----------------------------
+      # Verify Rollouts
+      # -----------------------------
+      - name: Verify Deployments
+        run: |
+          kubectl rollout status deployment/pernforge-server \
+            -n $NAMESPACE \
+            --timeout=180s
+
+          kubectl rollout status deployment/pernforge-client \
+            -n $NAMESPACE \
+            --timeout=180s
+
+      # -----------------------------
+      # Verify Health
+      # -----------------------------
+      - name: Verify API Health
+        run: |
+          kubectl port-forward svc/pernforge-server \
+            4000:4000 \
+            -n $NAMESPACE > /dev/null 2>&1 &
+
+          sleep 10
+
+          curl -f http://localhost:4000/api/health
+
+      # -----------------------------
+      # Show Resources
+      # -----------------------------
+      - name: Show Resources
+        run: |
+          kubectl get all -n $NAMESPACE
+          kubectl get pods -n $NAMESPACE
+          kubectl get ingress -n $NAMESPACE
+          kubectl get svc -n $NAMESPACE
